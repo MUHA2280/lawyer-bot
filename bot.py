@@ -232,6 +232,10 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_html(ans[:4000])
 
 def main():
+    if not TELEGRAM_TOKEN:
+        log.error("Нет TELEGRAM_TOKEN в Environment Variables! Добавьте его в Render Dashboard -> Environment")
+        raise SystemExit("Нет TELEGRAM_TOKEN в .env / окружении")
+
     # Мини веб-сервер для бесплатного хостинга (Render/Koyeb требуют открытый порт)
     # Не мешает polling-боту, просто отвечает 200 OK на любой запрос
     port = int(os.getenv("PORT", "10000"))
@@ -242,6 +246,10 @@ def main():
             self.send_header("Content-type", "text/plain; charset=utf-8")
             self.end_headers()
             self.wfile.write("Bot is running".encode())
+        def do_HEAD(self):
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain; charset=utf-8")
+            self.end_headers()
         def log_message(self, *args):
             pass
 
@@ -254,8 +262,7 @@ def main():
     threading.Thread(target=_serve, daemon=True).start()
     log.info(f"Health server on port {port}")
 
-    if not TELEGRAM_TOKEN:
-        raise SystemExit("Нет TELEGRAM_TOKEN в .env / окружении")
+    log.info("TELEGRAM_TOKEN найден, запускаю polling…")
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
